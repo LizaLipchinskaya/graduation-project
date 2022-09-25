@@ -2,7 +2,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class Controller {
+public class JdbcProvider {
 
     public static final String URL = "jdbc:postgresql://localhost:5432/schoolmenu";
     public static final String USERNAME = "postgres";
@@ -13,7 +13,7 @@ public class Controller {
 
     private final Algorithm algorithm = new Algorithm(getConnection());
 
-    public Controller() {
+    public JdbcProvider() {
         try {
             Class.forName(JDBC_POSTGRES_DRIVER);
         } catch (ClassNotFoundException e) {
