@@ -12,6 +12,7 @@ public class JdbcProvider {
     private Connection connection;
 
     private final Algorithm algorithm = new Algorithm(getConnection());
+    private final RightMenu rightMenu = new RightMenu(getConnection());
 
     public JdbcProvider() {
         try {
@@ -37,5 +38,9 @@ public class JdbcProvider {
 
     public Algorithm getAlgorithm() {
         return algorithm;
+    }
+
+    public RightMenu getRightMenu() {
+        return rightMenu;
     }
 }

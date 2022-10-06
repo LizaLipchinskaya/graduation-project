@@ -8,18 +8,10 @@ import java.util.Scanner;
 
 public class Algorithm {
 
-    Connection connection;
+    private final Connection connection;
 
     public Algorithm(Connection connection) {
         this.connection = connection;
-    }
-
-    public enum Day {
-        MONDAY,
-        TUESDAY,
-        WEDNESDAY,
-        THURSDAY,
-        FRIDAY
     }
 
     public void doChanges(Long idPupil) {
@@ -42,13 +34,14 @@ public class Algorithm {
         List<Integer> bannedCategory = new ArrayList<>();
 
         try (Statement statement = connection.createStatement()) {
-            ResultSet resultSet = statement.executeQuery("select category from pupil\n" +
-                    "inner join pupiltoproduct p on pupil.id = p.id_pupil\n" +
-                    "inner join product p2 on p2.id = p.id_product\n" +
-                    "inner join dishtoproduct d on p2.id = d.id_product\n" +
-                    "inner join dish d2 on d2.id = d.id_dish\n" +
-                    "inner join " + day + " m on d2.id = m.id_dish\n" +
-                    "where pupil.id = " + idPupil);
+            ResultSet resultSet = statement.executeQuery("select category from pupil "
+                                                          + " inner join pupiltoproduct p on pupil.id = p.id_pupil "
+                                                          + " inner join product p2 on p2.id = p.id_product "
+                                                          + " inner join dishtoproduct d on p2.id = d.id_product "
+                                                          + " inner join dish d2 on d2.id = d.id_dish "
+                                                          + " inner join " + day + " m on d2.id = m.id_dish "
+                                                          + " where pupil.id = " + idPupil
+            );
             while (resultSet.next()) {
                 bannedCategory.add(resultSet.getInt(1));
             }
@@ -72,7 +65,7 @@ public class Algorithm {
         List<String> firstCourse = new ArrayList<>();
         List<String> garnish = new ArrayList<>();
         List<String> meaty = new ArrayList<>();
-        String dayRus = dayToString(day);
+        String dayRus = Day.dayChangeString(day);
 
         for (Integer category : categories) {
             switch (category) {
@@ -125,45 +118,57 @@ public class Algorithm {
         String sqlJoin = "";
         String condition = "";
 
-        //Для пн не нужно, т.к. есть указанная категория и запрещенное блюдо уберется первым join
+        //запрещенное блюдо уберется первым join
         switch (day) {
+            case MONDAY -> {
+                sqlJoin = " left join tuesday t on dish.id = t.id_dish "
+                        + " left join wednesday w on dish.id = w.id_dish ";
+                condition = " and t.id_dish isnull and w.id_dish isnull ";
+            }
             case TUESDAY -> {
-                sqlJoin = "left join monday m on dish.id = m.id_dish\n" +
-                          "left join (select id_dish from replacement r\n" +
-                        "             where r.day_of_week in ('monday')) r on dish.id = r.id_dish\n";
-                condition = " and m.id isnull and r.id_dish isnull";
+                sqlJoin = " left join monday m on dish.id = m.id_dish "
+                        + " left join (select id_dish from replacement r "
+                        + "            where r.day_of_week in ('MONDAY')) r on dish.id = r.id_dish "
+                        + " left join wednesday w on dish.id = w.id_dish "
+                        + " left join thursday t on dish.id = t.id_dish ";
+                condition = " and m.id isnull and r.id_dish isnull and w.id_dish isnull and t.id_dish isnull";
             }
             case WEDNESDAY -> {
-                sqlJoin = "left join monday m on dish.id = m.id_dish\n" +
-                          "left join tuesday t on dish.id = t.id_dish\n" +
-                          "left join (select id_dish from replacement r\n" +
-                        "             where r.day_of_week in ('monday', 'tuesday')) r on dish.id = r.id_dish\n";
-                condition = " and m.id isnull and t.id isnull and r.id_dish isnull";
+                sqlJoin = " left join monday m on dish.id = m.id_dish "
+                        + " left join tuesday t on dish.id = t.id_dish "
+                        + " left join (select id_dish from replacement r "
+                        + "            where r.day_of_week in ('MONDAY', 'TUESDAY')) r on dish.id = r.id_dish "
+                        + " left join thursday th on dish.id = th.id_dish "
+                        + " left join friday f on dish.id = f.id_dish ";
+                condition = " and m.id isnull and t.id isnull and r.id_dish isnull and th.id_dish isnull "
+                          + " and f.id_dish isnull ";
             }
             case THURSDAY -> {
-                sqlJoin = "left join tuesday t on dish.id = t.id_dish\n" +
-                          "left join wednesday w on dish.id = w.id_dish\n" +
-                          "left join (select id_dish from replacement r\n" +
-                        "             where r.day_of_week in ('tuesday', 'wednesday')) r on dish.id = r.id_dish\n";
-                condition = " and t.id isnull and w.id isnull and r.id_dish isnull";
+                sqlJoin = " left join tuesday t on dish.id = t.id_dish "
+                        + " left join wednesday w on dish.id = w.id_dish "
+                        + " left join (select id_dish from replacement r "
+                        + "            where r.day_of_week in ('TUESDAY', 'WEDNESDAY')) r on dish.id = r.id_dish "
+                        + " left join friday f on dish.id = f.id_dish ";
+                condition = " and t.id isnull and w.id isnull and r.id_dish isnull and f.id_dish isnull ";
             }
             case FRIDAY -> {
-                sqlJoin = "left join wednesday w on dish.id = w.id_dish\n" +
-                          "left join thursday t on dish.id = t.id_dish\n" +
-                          "left join (select id_dish from replacement r\n" +
-                        "             where r.day_of_week in ('wednesday', 'thursday')) r on dish.id = r.id_dish\n";
-                condition = " and w.id isnull and t.id isnull and r.id_dish isnull";
+                sqlJoin = " left join wednesday w on dish.id = w.id_dish "
+                        + " left join thursday t on dish.id = t.id_dish "
+                        + " left join (select id_dish from replacement r "
+                        + "            where r.day_of_week in ('WEDNESDAY', 'THURSDAY')) r on dish.id = r.id_dish ";
+                condition = " and w.id isnull and t.id isnull and r.id_dish isnull ";
             }
         }
 
-        String query = "select name from dish\n" +
-                "left join (select distinct id_dish from pupil\n" +
-                "            inner join pupiltoproduct p on pupil.id = p.id_pupil\n" +
-                "            inner join product p2 on p2.id = p.id_product\n" +
-                "            right join dishtoproduct d on p2.id = d.id_product\n" +
-                "            where pupil.id = " + idPupil + ") t1 on id = t1.id_dish\n" +
-                sqlJoin +
-                "where category = " + category + " and t1.id_dish isnull" + condition;
+        String query = "select name from dish "
+                     + " left join (select distinct id_dish from pupil "
+                     + "            inner join pupiltoproduct p on pupil.id = p.id_pupil "
+                     + "            inner join product p2 on p2.id = p.id_product "
+                     + "            right join dishtoproduct d on p2.id = d.id_product "
+                     + "            where pupil.id = " + idPupil + ") t1 on id = t1.id_dish "
+                     + sqlJoin
+                     + " where category = " + category + " and t1.id_dish isnull "
+                     + condition;
 
         try (Statement statement = connection.createStatement()) {
             ResultSet resultSet = statement.executeQuery(query);
@@ -186,19 +191,6 @@ public class Algorithm {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-    }
-
-    private String dayToString(Day day) {
-        String dayRus = "";
-
-        switch (day) {
-            case MONDAY -> dayRus = " в понедельник ";
-            case TUESDAY -> dayRus = " во вторник ";
-            case WEDNESDAY -> dayRus = " в среду ";
-            case THURSDAY -> dayRus = " в четверг ";
-            case FRIDAY -> dayRus = " в пятницу ";
-        }
-        return dayRus;
     }
 
     private void addData(List<String> dishes, Day day) {
@@ -229,8 +221,9 @@ public class Algorithm {
     private Long findDishIdByName(String name) {
         Long id = null;
         try (Statement statement = connection.createStatement()) {
-            ResultSet resultSet = statement.executeQuery("select id from dish\n" +
-                                                              "where name = '" + name + "'");
+            ResultSet resultSet = statement.executeQuery("select id from dish "
+                                                           + " where name = '" + name + "'"
+            );
             while (resultSet.next()) {
                 id = (long) resultSet.getInt(1);
             }
