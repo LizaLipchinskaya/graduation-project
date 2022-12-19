@@ -1,3 +1,4 @@
+import java.security.AlgorithmConstraints;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -13,6 +14,7 @@ public class JdbcProvider {
 
     private final Algorithm algorithm = new Algorithm(getConnection());
     private final RightMenu rightMenu = new RightMenu(getConnection());
+    private final AlgorithmForPupils algorithmForPupils = new AlgorithmForPupils(getConnection());
 
     public JdbcProvider() {
         try {
@@ -42,5 +44,9 @@ public class JdbcProvider {
 
     public RightMenu getRightMenu() {
         return rightMenu;
+    }
+
+    public AlgorithmForPupils getAlgorithmForPupils() {
+        return algorithmForPupils;
     }
 }

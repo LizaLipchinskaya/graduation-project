@@ -15,30 +15,34 @@ public class RightMenu {
         this.connection = connection;
     }
 
-    public void createNewMenu() {
-        List<String[]> menu = compareMenu();
+    public void createNewMenu(List<Long> pupilIds) {
+        for (Long pupilId : pupilIds) {
+            printPupil(pupilId);
 
-        AsciiTable table = new AsciiTable();
-        table.addRule();
-        String[] monday = menu.get(0);
-        String[] tuesday = menu.get(1);
-        String[] wednesday = menu.get(2);
-        String[] thursday = menu.get(3);
-        String[] friday = menu.get(4);
-        for (int i = 0; i < monday.length; i++) {
-            table.addRow(monday[i], tuesday[i], wednesday[i], thursday[i], friday[i]);
+            List<String[]> menu = compareMenu(pupilId);
+
+            AsciiTable table = new AsciiTable();
             table.addRule();
+            String[] monday = menu.get(0);
+            String[] tuesday = menu.get(1);
+            String[] wednesday = menu.get(2);
+            String[] thursday = menu.get(3);
+            String[] friday = menu.get(4);
+            for (int i = 0; i < monday.length; i++) {
+                table.addRow(monday[i], tuesday[i], wednesday[i], thursday[i], friday[i]);
+                table.addRule();
+            }
+            System.out.println(table.render());
         }
-        System.out.println(table.render());
     }
 
-    private List<String[]> compareMenu() {
+    private List<String[]> compareMenu(Long pupilId) {
         List<String[]> rightMenu = new ArrayList<>();
         int i = 0;
         for (Day day : Day.values()) {
             String[] rightDayMenu = new String[4];
             rightDayMenu[0] = Day.dayRus(day);
-            List<String[]> changedDishes = findCategoryAndNameDish(day);
+            List<String[]> changedDishes = findCategoryAndNameDish(day, pupilId);
 
             int j = 1;
             while (j <= 3) {
@@ -62,12 +66,12 @@ public class RightMenu {
         return rightMenu;
     }
 
-    private List<String[]> findCategoryAndNameDish(Day day) {
+    private List<String[]> findCategoryAndNameDish(Day day, Long pupilId) {
         List<String[]> listDishNameAndCategory = new ArrayList<>();
         try (Statement statement = connection.createStatement()) {
             ResultSet resultSet = statement.executeQuery("select category, name from replacement "
-                                                           + " join dish d on d.id = replacement.id_dish "
-                                                           + " where day_of_week = '"+ day +"' "
+                                                           + " join dishes d on d.id = replacement.dish_id "
+                                                           + " where day_of_week = '"+ day +"' and pupil_id = " + pupilId
                                                            + " order by category"
             );
             while (resultSet.next()) {
@@ -87,7 +91,7 @@ public class RightMenu {
         String name = "";
         try (Statement statement = connection.createStatement()) {
             ResultSet resultSet = statement.executeQuery("select name from "+ day +" "
-                                                           + " join dish d on d.id = "+ day +".id_dish "
+                                                           + " join dishes d on d.id = "+ day +".id_dish "
                                                            + " where category = "+ category +" "
             );
 
@@ -100,5 +104,24 @@ public class RightMenu {
             e.printStackTrace();
         }
         return name;
+    }
+
+    private void printPupil(Long pupilId) {
+        String[] pupilCredential = new String[2];
+        try (Statement statement = connection.createStatement()) {
+            ResultSet resultSet = statement.executeQuery("select first_name, last_name from pupils "
+                                                                + "where id = " + pupilId);
+
+            while (resultSet.next()) {
+                pupilCredential[0] = resultSet.getString(1);
+                pupilCredential[1] = resultSet.getString(2);
+            }
+
+            resultSet.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println(pupilCredential[1] + ' ' + pupilCredential[0]);
     }
 }
